@@ -20,8 +20,10 @@ export default function EditHeroSlidePage() {
   const fetchSlide = async () => {
     try {
       const response = await heroSlidesApi.getById(params.id)
-      setSlide(response.data || response)
+      // API returns { success, message, data: {...} }
+      setSlide(response.data.data || response.data)
     } catch (error) {
+      console.error('Error fetching hero slide:', error)
       toast.error('Gagal memuat data hero slide')
       router.push('/hero-slides')
     } finally {

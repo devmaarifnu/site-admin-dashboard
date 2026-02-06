@@ -1,23 +1,27 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
-export function useDebounce() {
-  const [timeoutId, setTimeoutId] = useState(null);
+/**
+ * Custom hook that returns a debounced value
+ * @param {any} value - The value to debounce
+ * @param {number} delay - The delay in milliseconds (default: 500)
+ * @returns {any} The debounced value
+ */
+export function useDebounce(value, delay = 500) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
 
-  const debounce = useCallback((func, delay = 500) => {
-    return (...args) => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+  useEffect(() => {
+    // Set up a timeout to update the debounced value
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
 
-      const newTimeoutId = setTimeout(() => {
-        func(...args);
-      }, delay);
-
-      setTimeoutId(newTimeoutId);
+    // Clean up the timeout if value changes before delay expires
+    return () => {
+      clearTimeout(handler);
     };
-  }, [timeoutId]);
+  }, [value, delay]);
 
-  return debounce;
+  return debouncedValue;
 }

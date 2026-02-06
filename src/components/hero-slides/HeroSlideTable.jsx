@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { MoreHorizontal, Pencil, Trash2, Eye, GripVertical } from 'lucide-react'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import Pagination from '@/components/shared/Pagination'
 import { toast } from 'sonner'
 import { heroSlidesApi } from '@/lib/api/modules'
 import Image from 'next/image'
@@ -21,6 +22,26 @@ export function HeroSlideTable({ slides, onUpdate }) {
   const router = useRouter()
   const [deleteDialog, setDeleteDialog] = useState({ open: false, slide: null })
   const [loading, setLoading] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(9) // 3x3 grid
+
+  // Calculate pagination
+  const totalItems = slides?.length || 0
+  const totalPages = Math.ceil(totalItems / pageSize)
+  const startIndex = (currentPage - 1) * pageSize
+  const endIndex = startIndex + pageSize
+  const paginatedSlides = slides?.slice(startIndex, endIndex) || []
+
+  // Reset to page 1 when slides change
+  const handlePageChange = (page) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize)
+    setCurrentPage(1)
+  }
 
   const handleDelete = async () => {
     if (!deleteDialog.slide) return
@@ -41,12 +62,12 @@ export function HeroSlideTable({ slides, onUpdate }) {
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {slides?.length === 0 ? (
+        {totalItems === 0 ? (
           <div className="col-span-full text-center py-12 text-neutral-500">
             Belum ada hero slide
           </div>
         ) : (
-          slides?.map((slide) => (
+          paginatedSlides.map((slide) => (
             <Card key={slide.id} className="overflow-hidden">
               <div className="relative aspect-video bg-neutral-100">
                 <Image
@@ -110,6 +131,17 @@ export function HeroSlideTable({ slides, onUpdate }) {
           ))
         )}
       </div>
+
+      {totalItems > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          totalItems={totalItems}
+        />
+      )}
 
       <ConfirmDialog
         open={deleteDialog.open}

@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -27,7 +27,6 @@ const heroSlideSchema = z.object({
 
 export function HeroSlideForm({ slide, onSubmit, loading }) {
   const [imageUrl, setImageUrl] = useState(slide?.image_url || '')
-  const [uploading, setUploading] = useState(false)
 
   const {
     register,
@@ -35,9 +34,10 @@ export function HeroSlideForm({ slide, onSubmit, loading }) {
     formState: { errors },
     setValue,
     watch,
+    reset,
   } = useForm({
     resolver: zodResolver(heroSlideSchema),
-    defaultValues: slide || {
+    defaultValues: {
       title: '',
       description: '',
       primary_cta_label: '',
@@ -53,37 +53,31 @@ export function HeroSlideForm({ slide, onSubmit, loading }) {
 
   const active = watch('active')
 
-  const handleImageUpload = async (files) => {
-    if (!files || files.length === 0) return
+  // Update form when slide data is loaded
+  useEffect(() => {
+    if (slide) {
+      // Set image URL
+      setImageUrl(slide.image_url || '')
 
-    const file = files[0]
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('tag', 'hero')
-    formData.append('is_public', 'true')
+      // Convert ISO datetime to date format (YYYY-MM-DD)
+      const startDate = slide.start_date ? slide.start_date.split('T')[0] : ''
+      const endDate = slide.end_date ? slide.end_date.split('T')[0] : ''
 
-    setUploading(true)
-    try {
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin/cdn/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
+      // Reset form with slide data
+      reset({
+        title: slide.title || '',
+        description: slide.description || '',
+        primary_cta_label: slide.primary_cta_label || '',
+        primary_cta_link: slide.primary_cta_link || '',
+        secondary_cta_label: slide.secondary_cta_label || '',
+        secondary_cta_link: slide.secondary_cta_link || '',
+        order_number: slide.order_number || 1,
+        active: slide.active ?? true,
+        start_date: startDate,
+        end_date: endDate,
       })
-
-      if (!response.ok) throw new Error('Upload failed')
-
-      const data = await response.json()
-      setImageUrl(data.data?.url || data.url)
-      toast.success('Gambar berhasil diupload')
-    } catch (error) {
-      toast.error('Gagal mengupload gambar')
-    } finally {
-      setUploading(false)
     }
-  }
+  }, [slide, reset])
 
   const handleFormSubmit = (data) => {
     if (!imageUrl && !slide) {
@@ -91,11 +85,28 @@ export function HeroSlideForm({ slide, onSubmit, loading }) {
       return
     }
 
-    onSubmit({
+    // Convert date to ISO datetime format or remove if empty
+    const payload = {
       ...data,
-      image_url: imageUrl,
+      image: imageUrl,
       order_number: parseInt(data.order_number),
-    })
+    }
+
+    // Convert start_date to ISO datetime if exists
+    if (payload.start_date && payload.start_date !== '') {
+      payload.start_date = new Date(payload.start_date + 'T00:00:00').toISOString()
+    } else {
+      delete payload.start_date
+    }
+
+    // Convert end_date to ISO datetime if exists
+    if (payload.end_date && payload.end_date !== '') {
+      payload.end_date = new Date(payload.end_date + 'T23:59:59').toISOString()
+    } else {
+      delete payload.end_date
+    }
+
+    onSubmit(payload)
   }
 
   return (
@@ -125,11 +136,12 @@ export function HeroSlideForm({ slide, onSubmit, loading }) {
             </div>
           ) : (
             <ImageUploader
-              onUpload={handleImageUpload}
-              accept="image/*"
+              value={imageUrl}
+              onChange={setImageUrl}
+              folder="hero"
+              label=""
+              description="Recommended size: 1920x1080px (Max 5MB)"
               maxSize={5}
-              recommendedSize="1920x1080px"
-              disabled={uploading}
             />
           )}
         </CardContent>
@@ -260,7 +272,7 @@ export function HeroSlideForm({ slide, onSubmit, loading }) {
         <Button type="button" variant="outline" onClick={() => window.history.back()}>
           Batal
         </Button>
-        <Button type="submit" disabled={loading || uploading}>
+        <Button type="submit" disabled={loading}>
           {loading ? 'Menyimpan...' : slide ? 'Update Slide' : 'Tambah Slide'}
         </Button>
       </div>
