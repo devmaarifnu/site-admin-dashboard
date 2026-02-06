@@ -71,14 +71,14 @@ export function HeroSlideTable({ slides, onUpdate }) {
             <Card key={slide.id} className="overflow-hidden">
               <div className="relative aspect-video bg-neutral-100">
                 <Image
-                  src={slide.image_url}
+                  src={slide.image || slide.image_url}
                   alt={slide.title}
                   fill
                   className="object-cover"
                 />
                 <div className="absolute top-2 right-2">
-                  <Badge variant={slide.active ? 'default' : 'secondary'}>
-                    {slide.active ? 'Active' : 'Inactive'}
+                  <Badge variant={slide.is_active ?? slide.active ? 'default' : 'secondary'}>
+                    {slide.is_active ?? slide.active ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
               </div>
@@ -113,9 +113,9 @@ export function HeroSlideTable({ slides, onUpdate }) {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                {slide.primary_cta_label && (
+                {(slide.cta_label || slide.primary_cta_label) && (
                   <div className="text-sm text-neutral-500 mt-2">
-                    CTA: {slide.primary_cta_label}
+                    CTA: {slide.cta_label || slide.primary_cta_label}
                   </div>
                 )}
                 <div className="flex items-center justify-between mt-3 pt-3 border-t">

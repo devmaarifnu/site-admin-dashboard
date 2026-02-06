@@ -15,12 +15,12 @@ import Image from 'next/image'
 const heroSlideSchema = z.object({
   title: z.string().min(3, 'Judul minimal 3 karakter').max(200),
   description: z.string().max(200, 'Deskripsi maksimal 200 karakter').optional(),
-  primary_cta_label: z.string().optional(),
-  primary_cta_link: z.string().optional(),
-  secondary_cta_label: z.string().optional(),
-  secondary_cta_link: z.string().optional(),
+  cta_label: z.string().optional(),
+  cta_href: z.string().optional(),
+  cta_secondary_label: z.string().optional(),
+  cta_secondary_href: z.string().optional(),
   order_number: z.number().int().min(1),
-  active: z.boolean(),
+  is_active: z.boolean(),
   start_date: z.string().optional(),
   end_date: z.string().optional(),
 })
@@ -40,24 +40,24 @@ export function HeroSlideForm({ slide, onSubmit, loading }) {
     defaultValues: {
       title: '',
       description: '',
-      primary_cta_label: '',
-      primary_cta_link: '',
-      secondary_cta_label: '',
-      secondary_cta_link: '',
+      cta_label: '',
+      cta_href: '',
+      cta_secondary_label: '',
+      cta_secondary_href: '',
       order_number: 1,
-      active: true,
+      is_active: true,
       start_date: '',
       end_date: '',
     },
   })
 
-  const active = watch('active')
+  const isActive = watch('is_active')
 
   // Update form when slide data is loaded
   useEffect(() => {
     if (slide) {
-      // Set image URL
-      setImageUrl(slide.image_url || '')
+      // Set image URL (handle both 'image' and 'image_url' field names)
+      setImageUrl(slide.image || slide.image_url || '')
 
       // Convert ISO datetime to date format (YYYY-MM-DD)
       const startDate = slide.start_date ? slide.start_date.split('T')[0] : ''
@@ -67,12 +67,12 @@ export function HeroSlideForm({ slide, onSubmit, loading }) {
       reset({
         title: slide.title || '',
         description: slide.description || '',
-        primary_cta_label: slide.primary_cta_label || '',
-        primary_cta_link: slide.primary_cta_link || '',
-        secondary_cta_label: slide.secondary_cta_label || '',
-        secondary_cta_link: slide.secondary_cta_link || '',
+        cta_label: slide.cta_label || slide.primary_cta_label || '',
+        cta_href: slide.cta_href || slide.primary_cta_link || '',
+        cta_secondary_label: slide.cta_secondary_label || slide.secondary_cta_label || '',
+        cta_secondary_href: slide.cta_secondary_href || slide.secondary_cta_link || '',
         order_number: slide.order_number || 1,
-        active: slide.active ?? true,
+        is_active: slide.is_active ?? slide.active ?? true,
         start_date: startDate,
         end_date: endDate,
       })
@@ -181,19 +181,19 @@ export function HeroSlideForm({ slide, onSubmit, loading }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="primary_cta_label">Primary CTA Label</Label>
+              <Label htmlFor="cta_label">Primary CTA Label</Label>
               <Input
-                id="primary_cta_label"
-                {...register('primary_cta_label')}
-                placeholder="e.g. Selengkapnya"
+                id="cta_label"
+                {...register('cta_label')}
+                placeholder="e.g. Pelajari Lebih Lanjut"
                 className="mt-2"
               />
             </div>
             <div>
-              <Label htmlFor="primary_cta_link">Primary CTA Link</Label>
+              <Label htmlFor="cta_href">Primary CTA Link</Label>
               <Input
-                id="primary_cta_link"
-                {...register('primary_cta_link')}
+                id="cta_href"
+                {...register('cta_href')}
                 placeholder="/tentang-kami"
                 className="mt-2"
               />
@@ -202,20 +202,20 @@ export function HeroSlideForm({ slide, onSubmit, loading }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="secondary_cta_label">Secondary CTA Label</Label>
+              <Label htmlFor="cta_secondary_label">Secondary CTA Label</Label>
               <Input
-                id="secondary_cta_label"
-                {...register('secondary_cta_label')}
-                placeholder="e.g. Hubungi Kami"
+                id="cta_secondary_label"
+                {...register('cta_secondary_label')}
+                placeholder="e.g. Daftar Sekarang"
                 className="mt-2"
               />
             </div>
             <div>
-              <Label htmlFor="secondary_cta_link">Secondary CTA Link</Label>
+              <Label htmlFor="cta_secondary_href">Secondary CTA Link</Label>
               <Input
-                id="secondary_cta_link"
-                {...register('secondary_cta_link')}
-                placeholder="/kontak"
+                id="cta_secondary_href"
+                {...register('cta_secondary_href')}
+                placeholder="/pendaftaran"
                 className="mt-2"
               />
             </div>
@@ -258,12 +258,12 @@ export function HeroSlideForm({ slide, onSubmit, loading }) {
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
-              id="active"
-              checked={active}
-              onChange={(e) => setValue('active', e.target.checked)}
+              id="is_active"
+              checked={isActive}
+              onChange={(e) => setValue('is_active', e.target.checked)}
               className="h-4 w-4"
             />
-            <Label htmlFor="active">Slide aktif (tampilkan di website)</Label>
+            <Label htmlFor="is_active">Slide aktif (tampilkan di website)</Label>
           </div>
         </CardContent>
       </Card>
