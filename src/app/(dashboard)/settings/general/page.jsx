@@ -11,28 +11,31 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { settingsApi } from '@/lib/api/modules'
 import { toast } from 'sonner'
 import Image from 'next/image'
+import ImageUploader from '@/components/shared/ImageUploader'
 
 const settingsSchema = z.object({
   site_name: z.string().min(3, 'Nama situs minimal 3 karakter'),
-  tagline: z.string().optional(),
-  description: z.string().optional(),
-  email: z.string().email('Email tidak valid'),
-  phone: z.string().optional(),
-  whatsapp: z.string().optional(),
-  address: z.string().optional(),
-  facebook_url: z.string().optional(),
-  twitter_url: z.string().optional(),
-  instagram_url: z.string().optional(),
-  youtube_url: z.string().optional(),
-  linkedin_url: z.string().optional(),
+  site_description: z.string().optional(),
+  meta_keywords: z.string().optional(),
+  meta_description: z.string().optional(),
+  maintenance_mode: z.string().optional(),
+  google_analytics_id: z.string().optional(),
+  items_per_page: z.string().optional(),
+  contact_email: z.string().email('Email tidak valid'),
+  contact_phone: z.string().optional(),
+  contact_address: z.string().optional(),
+  social_facebook: z.string().optional(),
+  social_twitter: z.string().optional(),
+  social_instagram: z.string().optional(),
+  social_youtube: z.string().optional(),
 })
 
 export default function GeneralSettingsPage() {
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
   const [logoUrl, setLogoUrl] = useState('')
-  const [logoDarkUrl, setLogoDarkUrl] = useState('')
   const [faviconUrl, setFaviconUrl] = useState('')
+  const [settingsMap, setSettingsMap] = useState(new Map())
 
   const {
     register,
@@ -49,61 +52,63 @@ export default function GeneralSettingsPage() {
 
   const fetchSettings = async () => {
     try {
-      const response = await settingsApi.getGeneral()
-      const data = response.data || response
-      reset(data)
-      setLogoUrl(data.logo_url || '')
-      setLogoDarkUrl(data.logo_dark_url || '')
-      setFaviconUrl(data.favicon_url || '')
+      const response = await settingsApi.getAll()
+      
+      // Response structure: { success, message, data: [...] }
+      const settings = response.data?.data || response.data || []
+      
+      // Transform array to Map and object
+      const map = new Map()
+      const formData = {}
+      
+      settings.forEach(setting => {
+        map.set(setting.setting_key, setting)
+        formData[setting.setting_key] = setting.setting_value
+      })
+      
+      setSettingsMap(map)
+      
+      // Set logo and favicon URLs
+      setLogoUrl(formData.site_logo || '')
+      setFaviconUrl(formData.site_favicon || '')
+      
+      // Reset form with data
+      reset(formData)
     } catch (error) {
+      console.error('Error fetching settings:', error)
       toast.error('Gagal memuat pengaturan')
     } finally {
       setFetching(false)
     }
   }
 
-  const handleImageUpload = async (file, type) => {
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('tag', 'logo')
-    formData.append('is_public', 'true')
-
-    try {
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin/cdn/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      })
-
-      if (!response.ok) throw new Error('Upload failed')
-
-      const data = await response.json()
-      const uploadedUrl = data.data?.url || data.url
-
-      if (type === 'logo') setLogoUrl(uploadedUrl)
-      else if (type === 'logo_dark') setLogoDarkUrl(uploadedUrl)
-      else if (type === 'favicon') setFaviconUrl(uploadedUrl)
-
-      toast.success('Logo berhasil diupload')
-    } catch (error) {
-      toast.error('Gagal mengupload logo')
-    }
-  }
+  // No need for manual upload handler - ImageUploader handles it
 
   const onSubmit = async (data) => {
     setLoading(true)
     try {
-      await settingsApi.updateGeneral({
+      // Prepare settings object for update
+      const payload = {
         ...data,
-        logo_url: logoUrl,
-        logo_dark_url: logoDarkUrl,
-        favicon_url: faviconUrl,
-      })
+        site_logo: logoUrl || '',
+        site_favicon: faviconUrl || '',
+      }
+      
+      // Convert items_per_page to number if present
+      if (payload.items_per_page) {
+        payload.items_per_page = parseInt(payload.items_per_page, 10)
+      }
+      
+      // Convert maintenance_mode to boolean
+      if (payload.maintenance_mode !== undefined) {
+        payload.maintenance_mode = payload.maintenance_mode === 'true'
+      }
+      
+      await settingsApi.update(payload)
       toast.success('Pengaturan berhasil disimpan')
+      fetchSettings() // Refresh data
     } catch (error) {
+      console.error('Error saving settings:', error)
       toast.error(error.response?.data?.message || 'Gagal menyimpan pengaturan')
     } finally {
       setLoading(false)
@@ -145,20 +150,10 @@ export default function GeneralSettingsPage() {
             </div>
 
             <div>
-              <Label htmlFor="tagline">Tagline</Label>
-              <Input
-                id="tagline"
-                {...register('tagline')}
-                placeholder="Lembaga Pendidikan Ma'arif NU"
-                className="mt-2"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="site_description">Description</Label>
               <textarea
-                id="description"
-                {...register('description')}
+                id="site_description"
+                {...register('site_description')}
                 placeholder="Deskripsi website"
                 className="mt-2 w-full min-h-[100px] px-3 py-2 border rounded-md"
               />
@@ -172,102 +167,135 @@ export default function GeneralSettingsPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <Label>Logo (Light Mode)</Label>
-              <div className="mt-2">
-                {logoUrl ? (
-                  <div className="flex items-center gap-4">
-                    <div className="relative w-32 h-32 border rounded-lg p-2">
-                      <Image src={logoUrl} alt="Logo" fill className="object-contain" />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        const input = document.createElement('input')
-                        input.type = 'file'
-                        input.accept = 'image/*'
-                        input.onchange = (e) => handleImageUpload(e.target.files[0], 'logo')
-                        input.click()
-                      }}
-                    >
-                      Ganti Logo
-                    </Button>
+              <Label>Logo</Label>
+              {logoUrl ? (
+                <div className="mt-2 space-y-4">
+                  <div className="relative w-48 h-48 border rounded-lg p-4 bg-white">
+                    <Image src={logoUrl} alt="Logo" fill className="object-contain" />
                   </div>
-                ) : (
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleImageUpload(e.target.files[0], 'logo')}
-                    className="block"
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setLogoUrl('')}
+                  >
+                    Ganti Logo
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-2">
+                  <ImageUploader
+                    value={logoUrl}
+                    onChange={setLogoUrl}
+                    folder="logo"
+                    label=""
+                    description="Recommended size: 200x200px (Max 2MB)"
+                    maxSize={2}
                   />
-                )}
-              </div>
-            </div>
-
-            <div>
-              <Label>Logo (Dark Mode)</Label>
-              <div className="mt-2">
-                {logoDarkUrl ? (
-                  <div className="flex items-center gap-4">
-                    <div className="relative w-32 h-32 border rounded-lg p-2 bg-neutral-900">
-                      <Image src={logoDarkUrl} alt="Logo Dark" fill className="object-contain" />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        const input = document.createElement('input')
-                        input.type = 'file'
-                        input.accept = 'image/*'
-                        input.onchange = (e) => handleImageUpload(e.target.files[0], 'logo_dark')
-                        input.click()
-                      }}
-                    >
-                      Ganti Logo
-                    </Button>
-                  </div>
-                ) : (
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleImageUpload(e.target.files[0], 'logo_dark')}
-                    className="block"
-                  />
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             <div>
               <Label>Favicon</Label>
-              <div className="mt-2">
-                {faviconUrl ? (
-                  <div className="flex items-center gap-4">
-                    <div className="relative w-16 h-16 border rounded-lg">
-                      <Image src={faviconUrl} alt="Favicon" fill className="object-contain" />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        const input = document.createElement('input')
-                        input.type = 'file'
-                        input.accept = 'image/*'
-                        input.onchange = (e) => handleImageUpload(e.target.files[0], 'favicon')
-                        input.click()
-                      }}
-                    >
-                      Ganti Favicon
-                    </Button>
+              {faviconUrl ? (
+                <div className="mt-2 space-y-4">
+                  <div className="relative w-24 h-24 border rounded-lg p-2 bg-white">
+                    <Image src={faviconUrl} alt="Favicon" fill className="object-contain" />
                   </div>
-                ) : (
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => handleImageUpload(e.target.files[0], 'favicon')}
-                    className="block"
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setFaviconUrl('')}
+                  >
+                    Ganti Favicon
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-2">
+                  <ImageUploader
+                    value={faviconUrl}
+                    onChange={setFaviconUrl}
+                    folder="logo"
+                    label=""
+                    description="Recommended size: 32x32px or 64x64px (Max 1MB)"
+                    maxSize={1}
                   />
-                )}
-              </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>SEO Settings</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="meta_keywords">Meta Keywords</Label>
+              <Input
+                id="meta_keywords"
+                {...register('meta_keywords')}
+                placeholder="lp ma'arif nu, pendidikan islam, nahdlatul ulama"
+                className="mt-2"
+              />
+              <p className="text-xs text-neutral-500 mt-1">Pisahkan dengan koma</p>
+            </div>
+
+            <div>
+              <Label htmlFor="meta_description">Meta Description</Label>
+              <textarea
+                id="meta_description"
+                {...register('meta_description')}
+                placeholder="Deskripsi untuk mesin pencari (SEO)"
+                className="mt-2 w-full min-h-[80px] px-3 py-2 border rounded-md"
+                maxLength={160}
+              />
+              <p className="text-xs text-neutral-500 mt-1">Maksimal 160 karakter</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Advanced Settings</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="google_analytics_id">Google Analytics ID</Label>
+              <Input
+                id="google_analytics_id"
+                {...register('google_analytics_id')}
+                placeholder="UA-XXXXXXXXX-X atau G-XXXXXXXXXX"
+                className="mt-2"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="items_per_page">Items Per Page</Label>
+              <Input
+                id="items_per_page"
+                type="number"
+                {...register('items_per_page')}
+                placeholder="10"
+                className="mt-2"
+                min="1"
+                max="100"
+              />
+              <p className="text-xs text-neutral-500 mt-1">Jumlah item per halaman untuk tabel/list</p>
+            </div>
+
+            <div>
+              <Label htmlFor="maintenance_mode">Maintenance Mode</Label>
+              <select
+                id="maintenance_mode"
+                {...register('maintenance_mode')}
+                className="mt-2 w-full px-3 py-2 border rounded-md"
+              >
+                <option value="false">Disabled</option>
+                <option value="true">Enabled</option>
+              </select>
+              <p className="text-xs text-neutral-500 mt-1">Aktifkan untuk menutup sementara website</p>
             </div>
           </CardContent>
         </Card>
@@ -278,44 +306,34 @@ export default function GeneralSettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="contact_email">Email *</Label>
               <Input
-                id="email"
+                id="contact_email"
                 type="email"
-                {...register('email')}
+                {...register('contact_email')}
                 placeholder="info@lpmaarifnu.or.id"
                 className="mt-2"
               />
-              {errors.email && (
-                <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
+              {errors.contact_email && (
+                <p className="text-sm text-red-600 mt-1">{errors.contact_email.message}</p>
               )}
             </div>
 
             <div>
-              <Label htmlFor="phone">Phone</Label>
+              <Label htmlFor="contact_phone">Phone</Label>
               <Input
-                id="phone"
-                {...register('phone')}
+                id="contact_phone"
+                {...register('contact_phone')}
                 placeholder="+62 21 1234567"
                 className="mt-2"
               />
             </div>
 
             <div>
-              <Label htmlFor="whatsapp">WhatsApp</Label>
-              <Input
-                id="whatsapp"
-                {...register('whatsapp')}
-                placeholder="+62 812 3456 7890"
-                className="mt-2"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="contact_address">Address</Label>
               <textarea
-                id="address"
-                {...register('address')}
+                id="contact_address"
+                {...register('contact_address')}
                 placeholder="Alamat lengkap"
                 className="mt-2 w-full min-h-[100px] px-3 py-2 border rounded-md"
               />
@@ -329,51 +347,41 @@ export default function GeneralSettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="facebook_url">Facebook URL</Label>
+              <Label htmlFor="social_facebook">Facebook URL</Label>
               <Input
-                id="facebook_url"
-                {...register('facebook_url')}
+                id="social_facebook"
+                {...register('social_facebook')}
                 placeholder="https://facebook.com/lpmaarifnu"
                 className="mt-2"
               />
             </div>
 
             <div>
-              <Label htmlFor="twitter_url">Twitter/X URL</Label>
+              <Label htmlFor="social_twitter">Twitter/X URL</Label>
               <Input
-                id="twitter_url"
-                {...register('twitter_url')}
+                id="social_twitter"
+                {...register('social_twitter')}
                 placeholder="https://twitter.com/lpmaarifnu"
                 className="mt-2"
               />
             </div>
 
             <div>
-              <Label htmlFor="instagram_url">Instagram URL</Label>
+              <Label htmlFor="social_instagram">Instagram URL</Label>
               <Input
-                id="instagram_url"
-                {...register('instagram_url')}
+                id="social_instagram"
+                {...register('social_instagram')}
                 placeholder="https://instagram.com/lpmaarifnu"
                 className="mt-2"
               />
             </div>
 
             <div>
-              <Label htmlFor="youtube_url">YouTube URL</Label>
+              <Label htmlFor="social_youtube">YouTube URL</Label>
               <Input
-                id="youtube_url"
-                {...register('youtube_url')}
+                id="social_youtube"
+                {...register('social_youtube')}
                 placeholder="https://youtube.com/@lpmaarifnu"
-                className="mt-2"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="linkedin_url">LinkedIn URL</Label>
-              <Input
-                id="linkedin_url"
-                {...register('linkedin_url')}
-                placeholder="https://linkedin.com/company/lpmaarifnu"
                 className="mt-2"
               />
             </div>

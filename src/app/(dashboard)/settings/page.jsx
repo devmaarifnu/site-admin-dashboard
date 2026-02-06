@@ -25,14 +25,6 @@ export default function SettingsPage() {
       color: 'text-green-600',
       bgColor: 'bg-green-50',
     },
-    {
-      title: 'Appearance',
-      description: 'Pengaturan tampilan dan maintenance mode',
-      icon: Palette,
-      path: '/settings/appearance',
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-    },
   ]
 
   return (

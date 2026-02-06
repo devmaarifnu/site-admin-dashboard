@@ -61,14 +61,10 @@ export const contactMessagesApi = {
 }
 
 export const settingsApi = {
-  getGeneral: () => apiClient.get('/settings/general'),
-  updateGeneral: (data) => apiClient.put('/settings/general', data),
-  
-  getSEO: () => apiClient.get('/settings/seo'),
-  updateSEO: (data) => apiClient.put('/settings/seo', data),
-  
-  getAppearance: () => apiClient.get('/settings/appearance'),
-  updateAppearance: (data) => apiClient.put('/settings/appearance', data),
+  getAll: () => apiClient.get('/settings'),
+  update: (data) => apiClient.put('/settings', data),
+  getByKey: (key) => apiClient.get(`/settings/${key}`),
+  updateByKey: (key, data) => apiClient.put(`/settings/${key}`, data),
 }
 
 export const analyticsApi = {
