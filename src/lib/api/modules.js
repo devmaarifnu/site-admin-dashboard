@@ -42,12 +42,17 @@ export const organizationApi = {
 }
 
 export const pagesApi = {
+  getAll: (params) => apiClient.get('/pages', { params }),
+  getBySlug: (slug) => apiClient.get(`/pages/${slug}`),
+  update: (slug, data) => apiClient.put(`/pages/${slug}`, data),
+
+  // Legacy methods for backward compatibility
   getVisiMisi: () => apiClient.get('/pages/visi-misi'),
   updateVisiMisi: (data) => apiClient.put('/pages/visi-misi', data),
-  
+
   getSejarah: () => apiClient.get('/pages/sejarah'),
   updateSejarah: (data) => apiClient.put('/pages/sejarah', data),
-  
+
   getProgramStrategis: () => apiClient.get('/pages/program-strategis'),
   updateProgramStrategis: (data) => apiClient.put('/pages/program-strategis', data),
 }
