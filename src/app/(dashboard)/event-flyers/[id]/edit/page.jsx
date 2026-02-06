@@ -20,8 +20,11 @@ export default function EditEventFlyerPage() {
   const fetchFlyer = async () => {
     try {
       const response = await eventFlyersApi.getById(params.id)
-      setFlyer(response.data || response)
+      console.log('Event flyer data:', response.data)
+      // API returns { success, message, data: {...} }
+      setFlyer(response.data.data || response.data)
     } catch (error) {
+      console.error('Error fetching event flyer:', error)
       toast.error('Gagal memuat data event flyer')
       router.push('/event-flyers')
     } finally {

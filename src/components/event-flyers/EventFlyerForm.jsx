@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,14 +22,13 @@ const eventFlyerSchema = z.object({
   contact_phone: z.string().optional(),
   contact_email: z.string().email('Email tidak valid').optional().or(z.literal('')),
   order_number: z.number().int().min(1),
-  active: z.boolean(),
+  is_active: z.boolean(),
   start_display_date: z.string().optional(),
   end_display_date: z.string().optional(),
 })
 
 export function EventFlyerForm({ flyer, onSubmit, loading }) {
-  const [imageUrl, setImageUrl] = useState(flyer?.image_url || '')
-  const [uploading, setUploading] = useState(false)
+  const [imageUrl, setImageUrl] = useState(flyer?.image || '')
 
   const {
     register,
@@ -37,9 +36,10 @@ export function EventFlyerForm({ flyer, onSubmit, loading }) {
     formState: { errors },
     setValue,
     watch,
+    reset,
   } = useForm({
     resolver: zodResolver(eventFlyerSchema),
-    defaultValues: flyer || {
+    defaultValues: {
       title: '',
       description: '',
       event_date: '',
@@ -49,45 +49,42 @@ export function EventFlyerForm({ flyer, onSubmit, loading }) {
       contact_phone: '',
       contact_email: '',
       order_number: 1,
-      active: true,
+      is_active: true,
       start_display_date: '',
       end_display_date: '',
     },
   })
 
-  const active = watch('active')
+  const isActive = watch('is_active')
 
-  const handleImageUpload = async (files) => {
-    if (!files || files.length === 0) return
+  // Update form when flyer data is loaded
+  useEffect(() => {
+    if (flyer) {
+      // Set image URL
+      setImageUrl(flyer.image || '')
 
-    const file = files[0]
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('tag', 'flyer')
-    formData.append('is_public', 'true')
+      // Convert ISO datetime to date format (YYYY-MM-DD)
+      const eventDate = flyer.event_date ? flyer.event_date.split('T')[0] : ''
+      const startDate = flyer.start_display_date ? flyer.start_display_date.split('T')[0] : ''
+      const endDate = flyer.end_display_date ? flyer.end_display_date.split('T')[0] : ''
 
-    setUploading(true)
-    try {
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin/cdn/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
+      // Reset form with flyer data
+      reset({
+        title: flyer.title || '',
+        description: flyer.description || '',
+        event_date: eventDate,
+        event_location: flyer.event_location || '',
+        registration_url: flyer.registration_url || '',
+        contact_person: flyer.contact_person || '',
+        contact_phone: flyer.contact_phone || '',
+        contact_email: flyer.contact_email || '',
+        order_number: flyer.order_number || 1,
+        is_active: flyer.is_active ?? true,
+        start_display_date: startDate,
+        end_display_date: endDate,
       })
-
-      if (!response.ok) throw new Error('Upload failed')
-
-      const data = await response.json()
-      setImageUrl(data.data?.url || data.url)
-      toast.success('Flyer berhasil diupload')
-    } catch (error) {
-      toast.error('Gagal mengupload flyer')
-    } finally {
-      setUploading(false)
     }
-  }
+  }, [flyer, reset])
 
   const handleFormSubmit = (data) => {
     if (!imageUrl && !flyer) {
@@ -95,11 +92,35 @@ export function EventFlyerForm({ flyer, onSubmit, loading }) {
       return
     }
 
-    onSubmit({
+    // Convert date to ISO datetime format or remove if empty
+    const payload = {
       ...data,
-      image_url: imageUrl,
+      image: imageUrl,
       order_number: parseInt(data.order_number),
-    })
+    }
+
+    // Convert event_date to ISO datetime if exists
+    if (payload.event_date && payload.event_date !== '') {
+      payload.event_date = new Date(payload.event_date + 'T00:00:00').toISOString()
+    } else {
+      delete payload.event_date
+    }
+
+    // Convert start_display_date to ISO datetime if exists
+    if (payload.start_display_date && payload.start_display_date !== '') {
+      payload.start_display_date = new Date(payload.start_display_date + 'T00:00:00').toISOString()
+    } else {
+      delete payload.start_display_date
+    }
+
+    // Convert end_display_date to ISO datetime if exists
+    if (payload.end_display_date && payload.end_display_date !== '') {
+      payload.end_display_date = new Date(payload.end_display_date + 'T23:59:59').toISOString()
+    } else {
+      delete payload.end_display_date
+    }
+
+    onSubmit(payload)
   }
 
   return (
@@ -131,10 +152,12 @@ export function EventFlyerForm({ flyer, onSubmit, loading }) {
             </div>
           ) : (
             <ImageUploader
-              onUpload={handleImageUpload}
-              accept="image/*"
+              value={imageUrl}
+              onChange={setImageUrl}
+              folder="flyer"
+              label=""
+              description="Recommended size: 800x1200px (Ratio 3:4, Max 5MB)"
               maxSize={5}
-              disabled={uploading}
             />
           )}
         </CardContent>
@@ -286,12 +309,12 @@ export function EventFlyerForm({ flyer, onSubmit, loading }) {
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
-              id="active"
-              checked={active}
-              onChange={(e) => setValue('active', e.target.checked)}
+              id="is_active"
+              checked={isActive}
+              onChange={(e) => setValue('is_active', e.target.checked)}
               className="h-4 w-4"
             />
-            <Label htmlFor="active">Aktif (tampilkan di website)</Label>
+            <Label htmlFor="is_active">Aktif (tampilkan di website)</Label>
           </div>
         </CardContent>
       </Card>
@@ -300,7 +323,7 @@ export function EventFlyerForm({ flyer, onSubmit, loading }) {
         <Button type="button" variant="outline" onClick={() => window.history.back()}>
           Batal
         </Button>
-        <Button type="submit" disabled={loading || uploading}>
+        <Button type="submit" disabled={loading}>
           {loading ? 'Menyimpan...' : flyer ? 'Update Flyer' : 'Tambah Flyer'}
         </Button>
       </div>

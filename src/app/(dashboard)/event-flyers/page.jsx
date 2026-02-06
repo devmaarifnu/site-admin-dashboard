@@ -17,12 +17,33 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
+import Pagination from '@/components/shared/Pagination'
 
 export default function EventFlyersPage() {
   const router = useRouter()
   const [flyers, setFlyers] = useState([])
   const [loading, setLoading] = useState(true)
   const [deleteDialog, setDeleteDialog] = useState({ open: false, flyer: null })
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(8) // 4x2 grid
+
+  // Calculate pagination
+  const totalItems = flyers?.length || 0
+  const totalPages = Math.ceil(totalItems / pageSize)
+  const startIndex = (currentPage - 1) * pageSize
+  const endIndex = startIndex + pageSize
+  const paginatedFlyers = flyers?.slice(startIndex, endIndex) || []
+
+  // Pagination handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize)
+    setCurrentPage(1)
+  }
 
   useEffect(() => {
     fetchFlyers()
@@ -32,10 +53,16 @@ export default function EventFlyersPage() {
     setLoading(true)
     try {
       const response = await eventFlyersApi.getAll()
-      // Response structure: { success, message, data: { items: [...], pagination: {...} } }
-      const items = response.data?.data?.items || response.data?.items || []
-      setFlyers(Array.isArray(items) ? items : [])
+      console.log('Event flyers API response:', response)
+      
+      // Response structure: { success, message, data: [...], pagination: {...} }
+      const responseData = response.data || response
+      const items = Array.isArray(responseData.data) ? responseData.data : []
+      
+      console.log('Flyers extracted:', items.length, items)
+      setFlyers(items)
     } catch (error) {
+      console.error('Error fetching event flyers:', error)
       toast.error('Gagal memuat event flyers')
     } finally {
       setLoading(false)
@@ -73,20 +100,25 @@ export default function EventFlyersPage() {
           <div className="text-center py-12">
             <p className="text-neutral-500">Memuat data...</p>
           </div>
+        ) : totalItems === 0 ? (
+          <div className="text-center py-12 col-span-full">
+            <p className="text-neutral-500">Belum ada event flyer</p>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {flyers.map((flyer) => (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {paginatedFlyers.map((flyer) => (
               <Card key={flyer.id} className="overflow-hidden">
                 <div className="relative aspect-[3/4] bg-neutral-100">
                   <Image
-                    src={flyer.image_url}
+                    src={flyer.image}
                     alt={flyer.title}
                     fill
                     className="object-cover"
                   />
                   <div className="absolute top-2 right-2">
-                    <Badge variant={flyer.active ? 'default' : 'secondary'}>
-                      {flyer.active ? 'Active' : 'Inactive'}
+                    <Badge variant={flyer.is_active ? 'default' : 'secondary'}>
+                      {flyer.is_active ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
                 </div>
@@ -133,7 +165,19 @@ export default function EventFlyersPage() {
                 </CardContent>
               </Card>
             ))}
-          </div>
+            </div>
+
+            {totalItems > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                totalItems={totalItems}
+              />
+            )}
+          </>
         )}
       </div>
 
