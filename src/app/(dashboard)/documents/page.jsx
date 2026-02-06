@@ -2,97 +2,223 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import SearchBar from '@/components/shared/SearchBar'
 import { DocumentTable } from '@/components/documents/DocumentTable'
-import Pagination from '@/components/shared/Pagination'
-import { Plus, Search } from 'lucide-react'
+import { PlusCircle, FileText } from 'lucide-react'
 import { documentsApi } from '@/lib/api/documents'
+import { categoriesApi } from '@/lib/api/categories-tags'
 import { toast } from 'sonner'
-import { useDebounce } from '@/hooks/useDebounce'
 
 export default function DocumentsPage() {
   const router = useRouter()
   const [documents, setDocuments] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
+  const [categories, setCategories] = useState([])
+  const [allDocuments, setAllDocuments] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
     total: 0,
+    totalPages: 0,
   })
-
-  const debouncedSearch = useDebounce(search, 500)
+  const [filters, setFilters] = useState({
+    search: '',
+    category_id: '',
+    status: '',
+    is_public: '',
+  })
 
   useEffect(() => {
     fetchDocuments()
-  }, [pagination.page, debouncedSearch])
+    fetchCategories()
+  }, [])
+
+  useEffect(() => {
+    filterAndPaginateDocuments()
+  }, [allDocuments, filters, pagination.page])
 
   const fetchDocuments = async () => {
-    setLoading(true)
+    setIsLoading(true)
     try {
-      const params = {
-        page: pagination.page,
-        limit: pagination.limit,
-        search: debouncedSearch || undefined,
-      }
-      const response = await documentsApi.getAll(params)
-      // Response structure: { success, message, data: { items: [...], pagination: {...} } }
-      const responseData = response.data?.data || response.data || {}
-      const items = responseData.items || []
-      setDocuments(items)
-      setPagination((prev) => ({
-        ...prev,
-        total: responseData.pagination?.total_items || 0,
-      }))
+      const response = await documentsApi.getAll()
+      const documentsData = response.data?.data || response.data || []
+      console.log('Documents fetched:', documentsData)
+      setAllDocuments(documentsData)
     } catch (error) {
+      console.error('Error fetching documents:', error)
       toast.error(error.response?.data?.message || 'Gagal memuat dokumen')
     } finally {
-      setLoading(false)
+      setIsLoading(false)
+    }
+  }
+
+  const fetchCategories = async () => {
+    try {
+      const response = await categoriesApi.getAll({ type: 'document' })
+      setCategories(response.data || [])
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+    }
+  }
+
+  const filterAndPaginateDocuments = () => {
+    let filtered = allDocuments
+
+    // Filter berdasarkan search
+    const searchTerm = String(filters.search || '').trim()
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase()
+      filtered = filtered.filter((doc) =>
+        doc.title?.toLowerCase().includes(searchLower) ||
+        doc.description?.toLowerCase().includes(searchLower) ||
+        doc.category?.name?.toLowerCase().includes(searchLower)
+      )
+    }
+
+    // Filter berdasarkan kategori
+    if (filters.category_id) {
+      filtered = filtered.filter((doc) => doc.category_id === parseInt(filters.category_id))
+    }
+
+    // Filter berdasarkan status
+    if (filters.status) {
+      filtered = filtered.filter((doc) => doc.status === filters.status)
+    }
+
+    // Filter berdasarkan visibility
+    if (filters.is_public) {
+      const isPublic = filters.is_public === 'true'
+      filtered = filtered.filter((doc) => doc.is_public === isPublic)
+    }
+
+    // Update total
+    const total = filtered.length
+    const totalPages = Math.ceil(total / pagination.limit)
+    setPagination((prev) => ({ ...prev, total, totalPages }))
+
+    // Pagination
+    const startIndex = (pagination.page - 1) * pagination.limit
+    const endIndex = startIndex + pagination.limit
+    const paginated = filtered.slice(startIndex, endIndex)
+
+    setDocuments(paginated)
+  }
+
+  const handleSearch = (searchValue) => {
+    setFilters((prev) => ({ ...prev, search: searchValue }))
+    setPagination((prev) => ({ ...prev, page: 1 }))
+  }
+
+  const handleFilterChange = (filterName, value) => {
+    setFilters((prev) => ({ ...prev, [filterName]: value }))
+    setPagination((prev) => ({ ...prev, page: 1 }))
+  }
+
+  const handlePageChange = (page) => {
+    setPagination((prev) => ({ ...prev, page }))
+  }
+
+  const handlePageSizeChange = (limit) => {
+    setPagination((prev) => ({ ...prev, limit, page: 1 }))
+  }
+
+  const handleDelete = async (id) => {
+    try {
+      await documentsApi.delete(id)
+      toast.success('Dokumen berhasil dihapus')
+      fetchDocuments()
+    } catch (error) {
+      toast.error('Gagal menghapus dokumen')
     }
   }
 
   return (
     <div className="space-y-6">
+      {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-neutral-900">Document Management</h1>
-          <p className="text-neutral-500 mt-1">Kelola semua dokumen dan file</p>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <FileText className="w-8 h-8 text-primary-600" />
+            Manajemen Dokumen
+          </h1>
+          <p className="mt-2 text-gray-600">
+            Kelola semua dokumen dan file di sini
+          </p>
         </div>
         <Button onClick={() => router.push('/documents/upload')}>
-          <Plus className="h-4 w-4 mr-2" />
+          <PlusCircle className="mr-2 h-4 w-4" />
           Upload Dokumen
         </Button>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
-          <Input
+      {/* Filters */}
+      <Card className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <SearchBar
+            onSearch={handleSearch}
             placeholder="Cari dokumen..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            defaultValue={filters.search}
           />
-        </div>
-      </div>
+          
+          <select
+            className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={filters.category_id}
+            onChange={(e) => handleFilterChange('category_id', e.target.value)}
+          >
+            <option value="">Semua Kategori</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
 
-      {loading && !documents.length ? (
-        <div className="text-center py-12">
-          <p className="text-neutral-500">Memuat data...</p>
+          <select
+            className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={filters.status}
+            onChange={(e) => handleFilterChange('status', e.target.value)}
+          >
+            <option value="">Semua Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+
+          <select
+            className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            value={filters.is_public}
+            onChange={(e) => handleFilterChange('is_public', e.target.value)}
+          >
+            <option value="">Semua Visibilitas</option>
+            <option value="true">Public</option>
+            <option value="false">Private</option>
+          </select>
+
+          <Button
+            variant="outline"
+            onClick={() => {
+              setFilters({ search: '', category_id: '', status: '', is_public: '' })
+              setPagination((prev) => ({ ...prev, page: 1 }))
+            }}
+          >
+            Reset Filter
+          </Button>
         </div>
-      ) : (
-        <>
-          <DocumentTable documents={documents} onUpdate={fetchDocuments} />
-          {pagination.total > pagination.limit && (
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={Math.ceil(pagination.total / pagination.limit)}
-              onPageChange={(page) => setPagination((prev) => ({ ...prev, page }))}
-            />
-          )}
-        </>
-      )}
+      </Card>
+
+      {/* Table */}
+      <Card>
+        <DocumentTable
+          documents={documents}
+          isLoading={isLoading}
+          pagination={pagination}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          onDelete={handleDelete}
+          onUpdate={fetchDocuments}
+        />
+      </Card>
     </div>
   )
 }

@@ -3,7 +3,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,7 +15,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import ImageUploader from '@/components/shared/ImageUploader'
 import { categoriesTagsApi } from '@/lib/api/categories-tags'
 import { toast } from 'sonner'
 import { Upload, FileText } from 'lucide-react'
@@ -25,13 +24,20 @@ const documentSchema = z.object({
   description: z.string().optional(),
   category_id: z.string().min(1, 'Kategori harus dipilih'),
   is_public: z.boolean(),
-  status: z.enum(['draft', 'published']),
+  status: z.enum(['active', 'inactive']),
 })
 
 export function DocumentForm({ document, onSubmit, loading }) {
   const [categories, setCategories] = useState([])
   const [fileUrl, setFileUrl] = useState(document?.file_url || '')
+  const [fileInfo, setFileInfo] = useState({
+    fileName: document?.file_name || '',
+    fileSize: document?.file_size || 0,
+    mimeType: document?.mime_type || '',
+    fileType: document?.file_type || '',
+  })
   const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef(null)
 
   const {
     register,
@@ -41,12 +47,12 @@ export function DocumentForm({ document, onSubmit, loading }) {
     watch,
   } = useForm({
     resolver: zodResolver(documentSchema),
-    defaultValues: document || {
-      title: '',
-      description: '',
-      category_id: '',
-      is_public: true,
-      status: 'draft',
+    defaultValues: {
+      title: document?.title || '',
+      description: document?.description || '',
+      category_id: document?.category_id?.toString() || '',
+      is_public: document?.is_public !== undefined ? document.is_public : true,
+      status: document?.status || 'active',
     },
   })
 
@@ -57,6 +63,19 @@ export function DocumentForm({ document, onSubmit, loading }) {
   useEffect(() => {
     fetchCategories()
   }, [])
+
+  useEffect(() => {
+    // Update fileUrl and fileInfo when document prop changes
+    if (document) {
+      setFileUrl(document.file_url || '')
+      setFileInfo({
+        fileName: document.file_name || '',
+        fileSize: document.file_size || 0,
+        mimeType: document.mime_type || '',
+        fileType: document.file_type || '',
+      })
+    }
+  }, [document])
 
   const fetchCategories = async () => {
     try {
@@ -71,15 +90,22 @@ export function DocumentForm({ document, onSubmit, loading }) {
     if (!files || files.length === 0) return
 
     const file = files[0]
+    
+    // Store file info
+    const fileName = file.name
+    const fileSize = file.size
+    const mimeType = file.type
+    const fileType = fileName.split('.').pop()?.toUpperCase() || 'PDF'
+    
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('tag', 'document')
+    formData.append('tag', 'documents')
     formData.append('is_public', 'true')
 
     setUploading(true)
     try {
       const token = localStorage.getItem('auth_token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin/cdn/upload`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cdn/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -87,27 +113,56 @@ export function DocumentForm({ document, onSubmit, loading }) {
         body: formData,
       })
 
-      if (!response.ok) throw new Error('Upload failed')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Upload failed')
+      }
 
       const data = await response.json()
-      setFileUrl(data.data?.url || data.url)
+      const uploadedUrl = data.data?.url || data.url
+      
+      setFileUrl(uploadedUrl)
+      setFileInfo({
+        fileName,
+        fileSize,
+        mimeType,
+        fileType,
+      })
       toast.success('File berhasil diupload')
     } catch (error) {
-      toast.error('Gagal mengupload file')
+      console.error('Upload error:', error)
+      toast.error(error.message || 'Gagal mengupload file')
     } finally {
       setUploading(false)
     }
   }
 
   const handleFormSubmit = (data) => {
+    // Untuk edit, fileUrl sudah ada dari document, untuk create harus upload dulu
     if (!fileUrl && !document) {
       toast.error('File harus diupload')
       return
     }
 
+    // Gunakan fileUrl yang baru jika ada upload baru, atau dari document yang ada
+    const finalFileUrl = fileUrl || document?.file_url
+
+    if (!finalFileUrl) {
+      toast.error('File harus diupload')
+      return
+    }
+
     onSubmit({
-      ...data,
-      file_url: fileUrl,
+      title: data.title,
+      description: data.description || '',
+      category_id: parseInt(data.category_id),
+      file_name: fileInfo.fileName || document?.file_name || 'document.pdf',
+      file_url: finalFileUrl,
+      file_type: fileInfo.fileType || document?.file_type || 'PDF',
+      file_size: fileInfo.fileSize || document?.file_size || 0,
+      mime_type: fileInfo.mimeType || document?.mime_type || 'application/pdf',
+      is_public: data.is_public,
+      status: data.status,
     })
   }
 
@@ -115,11 +170,20 @@ export function DocumentForm({ document, onSubmit, loading }) {
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Upload Dokumen</CardTitle>
+          <CardTitle>{document ? 'File Dokumen' : 'Upload Dokumen'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <Label>File Dokumen *</Label>
+            {/* Hidden file input - always rendered */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+              onChange={(e) => handleFileUpload(e.target.files)}
+              disabled={uploading}
+            />
             <div className="mt-2">
               {fileUrl ? (
                 <div className="flex items-center gap-4 p-4 border rounded-lg">
@@ -139,32 +203,30 @@ export function DocumentForm({ document, onSubmit, loading }) {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setFileUrl('')}
+                    onClick={() => {
+                      // Reset file input value
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = ''
+                      }
+                      // Trigger file picker
+                      fileInputRef.current?.click()
+                    }}
+                    disabled={uploading}
                   >
-                    Ganti File
+                    {uploading ? 'Mengupload...' : 'Ganti File'}
                   </Button>
                 </div>
               ) : (
                 <div className="border-2 border-dashed rounded-lg p-8 text-center">
                   <Upload className="h-12 w-12 mx-auto text-neutral-400 mb-4" />
-                  <input
-                    type="file"
-                    id="document-upload"
-                    className="hidden"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                    onChange={(e) => handleFileUpload(e.target.files)}
+                  <Button
+                    type="button"
+                    variant="outline"
                     disabled={uploading}
-                  />
-                  <label htmlFor="document-upload">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={uploading}
-                      onClick={() => document.getElementById('document-upload').click()}
-                    >
-                      {uploading ? 'Mengupload...' : 'Pilih File'}
-                    </Button>
-                  </label>
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploading ? 'Mengupload...' : 'Pilih File'}
+                  </Button>
                   <p className="text-sm text-neutral-500 mt-2">
                     PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX (Max 50MB)
                   </p>
@@ -246,8 +308,8 @@ export function DocumentForm({ document, onSubmit, loading }) {
                 <SelectValue placeholder="Pilih status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
             {errors.status && (

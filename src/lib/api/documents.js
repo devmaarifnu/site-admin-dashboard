@@ -22,12 +22,6 @@ export const documentsApi = {
 
   // Update document
   update: async (id, data) => {
-    const response = await apiClient.put(`${API_ENDPOINTS.DOCUMENTS}/${id}`, data);
-    return response.data;
-  },
-
-  // Replace document file
-  replaceFile: async (id, data) => {
     const response = await apiClient.put(`${API_ENDPOINTS.DOCUMENTS}/${id}/file`, data);
     return response.data;
   },
