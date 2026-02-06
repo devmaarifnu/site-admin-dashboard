@@ -33,47 +33,59 @@ export default function ActivityLogsPage() {
         page: pagination.page,
         limit: pagination.limit,
       })
-      // Response structure: { success, message, data: { items: [...], pagination: {...} } }
-      const responseData = response.data?.data || response.data || {}
-      const items = responseData.items || []
+      // API Response: { success, message, data: [...], pagination: {...} }
+      // Axios wraps it, so response.data contains the API response
+      const items = response.data.data || []
+      const paginationData = response.data.pagination || {}
       setLogs(items)
       setPagination((prev) => ({ 
         ...prev, 
-        total: responseData.pagination?.total_items || 0 
+        total: paginationData.total_items || 0 
       }))
     } catch (error) {
+      console.error('Error fetching logs:', error)
       toast.error('Gagal memuat activity logs')
     } finally {
       setLoading(false)
     }
   }
 
-  const getActionIcon = (action) => {
-    switch (action) {
-      case 'create':
-        return <Plus className="h-4 w-4" />
-      case 'update':
-        return <Edit className="h-4 w-4" />
-      case 'delete':
-        return <Trash2 className="h-4 w-4" />
-      case 'view':
-        return <Eye className="h-4 w-4" />
-      default:
-        return <FileText className="h-4 w-4" />
+  const getActionIcon = (logName) => {
+    if (!logName) return <FileText className="h-4 w-4" />
+    
+    const name = logName.toLowerCase()
+    if (name.includes('create') || name.includes('add')) {
+      return <Plus className="h-4 w-4" />
+    } else if (name.includes('update') || name.includes('edit')) {
+      return <Edit className="h-4 w-4" />
+    } else if (name.includes('delete') || name.includes('remove')) {
+      return <Trash2 className="h-4 w-4" />
+    } else if (name.includes('view') || name.includes('read')) {
+      return <Eye className="h-4 w-4" />
     }
+    return <FileText className="h-4 w-4" />
   }
 
-  const getActionBadge = (action) => {
-    const variants = {
-      create: 'default',
-      update: 'secondary',
-      delete: 'destructive',
-      view: 'outline',
+  const getActionBadge = (logName) => {
+    if (!logName) return <Badge variant="outline">-</Badge>
+    
+    const name = logName.toLowerCase()
+    let variant = 'outline'
+    
+    if (name.includes('create') || name.includes('add')) {
+      variant = 'default'
+    } else if (name.includes('update') || name.includes('edit')) {
+      variant = 'secondary'
+    } else if (name.includes('delete') || name.includes('remove')) {
+      variant = 'destructive'
+    } else if (name.includes('view') || name.includes('read')) {
+      variant = 'outline'
     }
+    
     return (
-      <Badge variant={variants[action] || 'outline'} className="flex items-center gap-1 w-fit">
-        {getActionIcon(action)}
-        {action}
+      <Badge variant={variant} className="flex items-center gap-1 w-fit">
+        {getActionIcon(logName)}
+        {logName}
       </Badge>
     )
   }
@@ -95,39 +107,77 @@ export default function ActivityLogsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Module</TableHead>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Log Name</TableHead>
                   <TableHead>Description</TableHead>
+                  <TableHead>Subject Type</TableHead>
+                  <TableHead>Subject ID</TableHead>
+                  <TableHead>Causer Type</TableHead>
+                  <TableHead>Causer ID</TableHead>
+                  <TableHead>Properties</TableHead>
                   <TableHead>IP Address</TableHead>
+                  <TableHead>User Agent</TableHead>
                   <TableHead>Timestamp</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {logs?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-neutral-500">
+                    <TableCell colSpan={11} className="text-center py-8 text-neutral-500">
                       Belum ada activity logs
                     </TableCell>
                   </TableRow>
                 ) : (
                   logs?.map((log) => (
                     <TableRow key={log.id}>
+                      <TableCell className="font-mono text-sm">{log.id}</TableCell>
+                      <TableCell className="whitespace-nowrap">{getActionBadge(log.log_name)}</TableCell>
+                      <TableCell className="max-w-xs truncate">
+                        {log.description || '-'}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {log.subject_type ? (
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {log.subject_type}
+                          </Badge>
+                        ) : '-'}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {log.subject_id || '-'}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {log.causer_type ? (
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {log.causer_type}
+                          </Badge>
+                        ) : '-'}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-neutral-400" />
-                          <span className="font-medium">{log.user_name || 'System'}</span>
+                          {log.causer_id ? (
+                            <>
+                              <User className="h-4 w-4 text-neutral-400" />
+                              <span className="font-mono text-sm">{log.causer_id}</span>
+                            </>
+                          ) : (
+                            <span className="text-neutral-400">-</span>
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell>{getActionBadge(log.action)}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{log.module}</Badge>
+                      <TableCell className="max-w-xs">
+                        {log.properties ? (
+                          <pre className="text-xs bg-neutral-50 p-2 rounded overflow-auto max-h-20">
+                            {JSON.stringify(log.properties, null, 2)}
+                          </pre>
+                        ) : '-'}
                       </TableCell>
-                      <TableCell className="max-w-md truncate">{log.description}</TableCell>
-                      <TableCell className="text-neutral-500 font-mono text-xs">
-                        {log.ip_address}
+                      <TableCell className="text-neutral-500 font-mono text-xs whitespace-nowrap">
+                        {log.ip_address || '-'}
                       </TableCell>
-                      <TableCell className="text-neutral-500">
+                      <TableCell className="max-w-xs truncate text-xs text-neutral-500" title={log.user_agent || ''}>
+                        {log.user_agent || '-'}
+                      </TableCell>
+                      <TableCell className="text-neutral-500 whitespace-nowrap">
                         {log.created_at && format(new Date(log.created_at), 'dd MMM yyyy HH:mm', { locale: id })}
                       </TableCell>
                     </TableRow>
@@ -137,13 +187,20 @@ export default function ActivityLogsPage() {
             </Table>
           </div>
 
-          {pagination.total > pagination.limit && (
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={Math.ceil(pagination.total / pagination.limit)}
-              onPageChange={(page) => setPagination((prev) => ({ ...prev, page }))}
-            />
-          )}
+          {/* Pagination Info and Controls */}
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-neutral-500">
+              Menampilkan {logs.length} dari {pagination.total} activity logs
+            </div>
+            
+            {pagination.total > pagination.limit && (
+              <Pagination
+                currentPage={pagination.page}
+                totalPages={Math.ceil(pagination.total / pagination.limit)}
+                onPageChange={(page) => setPagination((prev) => ({ ...prev, page }))}
+              />
+            )}
+          </div>
         </>
       )}
     </div>
