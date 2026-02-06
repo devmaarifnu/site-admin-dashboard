@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 import { Bell, Search, Menu } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,8 +18,18 @@ import Link from 'next/link';
 import AdminBreadcrumb from './AdminBreadcrumb';
 
 export default function AdminTopbar() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   const notifications = [
     {
@@ -138,10 +149,13 @@ export default function AdminTopbar() {
                   <Link href="/profile">Profil Saya</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/settings">Pengaturan</Link>
+                  <Link href="/settings/general">Pengaturan</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600">
+                <DropdownMenuItem 
+                  className="text-red-600 cursor-pointer"
+                  onClick={handleLogout}
+                >
                   Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
