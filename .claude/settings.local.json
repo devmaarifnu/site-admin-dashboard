@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(tree:*)",
+      "Bash(ls:*)",
+      "Bash(xargs ls:*)",
+      "Bash(npm run build:standalone:*)",
+      "Bash(node build-standalone.js)",
+      "Bash(timeout:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
