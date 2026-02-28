@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  maarif-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: maarif-admin
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # Add your environment variables here
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
