@@ -31,7 +31,6 @@ jobs:
           cp -r .next/standalone deploy/
           mkdir -p deploy/.next
           cp -r .next/static deploy/.next/
-          cp -r public deploy/
 
       - name: Compress
         run: tar -czf deploy.tar.gz deploy
@@ -63,9 +62,6 @@ jobs:
 
             echo "Replace static..."
             cp -rf deploy/.next/static .next/standalone/.next/
-
-            echo "Replace public..."
-            cp -rf deploy/public/* .next/standalone/public/
 
             rm -rf deploy
 
