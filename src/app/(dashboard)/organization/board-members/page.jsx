@@ -72,16 +72,20 @@ export default function BoardMembersPage() {
           <div className="text-center py-12">
             <p className="text-neutral-500">Memuat data...</p>
           </div>
+        ) : members.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-neutral-500">Belum ada data board member</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {members.map((member) => (
               <Card key={member.id}>
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
-                    {member.photo_url && (
+                    {member.photo && (
                       <div className="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0">
                         <Image
-                          src={member.photo_url}
+                          src={member.photo}
                           alt={member.name}
                           fill
                           className="object-cover"
@@ -95,9 +99,11 @@ export default function BoardMembersPage() {
                           {member.title && (
                             <p className="text-sm text-neutral-500">{member.title}</p>
                           )}
-                          <p className="text-sm text-primary-600 mt-1">{member.position}</p>
+                          <p className="text-sm text-primary-600 mt-1">
+                            {member.position?.position_name || '-'}
+                          </p>
                           <p className="text-xs text-neutral-500 mt-1">
-                            {member.period_start} {member.period_end && `- ${member.period_end}`}
+                            {member.period_start}{member.period_end ? ` - ${member.period_end}` : ''}
                           </p>
                         </div>
                         <DropdownMenu>

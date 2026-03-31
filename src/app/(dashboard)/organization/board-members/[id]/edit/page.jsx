@@ -20,7 +20,7 @@ export default function EditBoardMemberPage() {
   const fetchMember = async () => {
     try {
       const response = await organizationApi.getBoardMemberById(params.id)
-      setMember(response.data || response)
+      setMember(response.data?.data || response.data || response)
     } catch (error) {
       toast.error('Gagal memuat data board member')
       router.push('/organization/board-members')

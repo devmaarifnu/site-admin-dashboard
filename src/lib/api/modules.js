@@ -19,6 +19,9 @@ export const eventFlyersApi = {
 }
 
 export const organizationApi = {
+  // Positions
+  getPositions: (params) => apiClient.get('/organization/positions', { params }),
+
   // Board Members
   getBoardMembers: (params) => apiClient.get('/organization/board-members', { params }),
   getBoardMemberById: (id) => apiClient.get(`/organization/board-members/${id}`),
