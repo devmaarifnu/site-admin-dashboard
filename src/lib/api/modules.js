@@ -36,6 +36,13 @@ export const organizationApi = {
   updateDepartment: (id, data) => apiClient.put(`/organization/departments/${id}`, data),
   deleteDepartment: (id) => apiClient.delete(`/organization/departments/${id}`),
 
+  // Department Members
+  getDepartmentMembers: (params) => apiClient.get('/organization/department-members', { params }),
+  getDepartmentMemberById: (id) => apiClient.get(`/organization/department-members/${id}`),
+  createDepartmentMember: (data) => apiClient.post('/organization/department-members', data),
+  updateDepartmentMember: (id, data) => apiClient.put(`/organization/department-members/${id}`, data),
+  deleteDepartmentMember: (id) => apiClient.delete(`/organization/department-members/${id}`),
+
   // Editorial Team
   getEditorialTeam: (params) => apiClient.get('/organization/editorial-team', { params }),
   getEditorialTeamById: (id) => apiClient.get(`/organization/editorial-team/${id}`),

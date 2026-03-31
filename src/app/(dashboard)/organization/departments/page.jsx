@@ -21,7 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Pencil, Trash2, Users } from 'lucide-react'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 
 export default function DepartmentsPage() {
@@ -115,6 +115,10 @@ export default function DepartmentsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => router.push(`/organization/departments/${dept.id}/members`)}>
+                              <Users className="mr-2 h-4 w-4" />
+                              Kelola Anggota
+                            </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => router.push(`/organization/departments/${dept.id}/edit`)}
                             >
