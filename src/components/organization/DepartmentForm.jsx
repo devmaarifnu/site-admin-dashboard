@@ -11,7 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 const departmentSchema = z.object({
   name: z.string().min(1, 'Nama departemen harus diisi'),
   description: z.string().optional(),
-  head_name: z.string().optional(),
   order_number: z.number().int().min(0),
   is_active: z.boolean(),
 })
@@ -29,14 +28,12 @@ export function DepartmentForm({ department, onSubmit, loading }) {
       ? {
           name: department.name || '',
           description: department.description || '',
-          head_name: department.head_name || '',
           order_number: department.order_number ?? 0,
           is_active: department.is_active ?? true,
         }
       : {
           name: '',
           description: '',
-          head_name: '',
           order_number: 0,
           is_active: true,
         },
@@ -71,16 +68,6 @@ export function DepartmentForm({ department, onSubmit, loading }) {
               {...register('description')}
               placeholder="Deskripsi singkat departemen"
               className="mt-2 w-full min-h-[100px] px-3 py-2 border rounded-md text-sm"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="head_name">Nama Kepala Departemen</Label>
-            <Input
-              id="head_name"
-              {...register('head_name')}
-              placeholder="e.g. Dr. Ahmad"
-              className="mt-2"
             />
           </div>
 
