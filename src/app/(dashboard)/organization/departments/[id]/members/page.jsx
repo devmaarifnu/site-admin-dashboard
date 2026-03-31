@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,7 +28,7 @@ const roleLabels = {
 const emptyForm = { name: '', role: 'anggota', order_number: 0, is_active: true }
 
 export default function DepartmentMembersPage({ params }) {
-  const { id } = use(params)
+  const { id } = params
   const router = useRouter()
   const [department, setDepartment] = useState(null)
   const [members, setMembers] = useState([])
