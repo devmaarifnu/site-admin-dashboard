@@ -105,6 +105,18 @@ export default function AdminSidebar() {
           href: '/organization/departments',
           roles: ['super_admin', 'admin'],
         },
+        {
+          id: 'editorial-team',
+          label: 'Tim Redaksi',
+          href: '/organization/editorial-team',
+          roles: ['super_admin', 'admin'],
+        },
+        {
+          id: 'editorial-council',
+          label: 'Dewan Redaksi',
+          href: '/organization/editorial-council',
+          roles: ['super_admin', 'admin'],
+        },
       ],
     },
     {

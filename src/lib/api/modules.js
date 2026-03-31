@@ -32,6 +32,20 @@ export const organizationApi = {
   createDepartment: (data) => apiClient.post('/organization/departments', data),
   updateDepartment: (id, data) => apiClient.put(`/organization/departments/${id}`, data),
   deleteDepartment: (id) => apiClient.delete(`/organization/departments/${id}`),
+
+  // Editorial Team
+  getEditorialTeam: (params) => apiClient.get('/organization/editorial-team', { params }),
+  getEditorialTeamById: (id) => apiClient.get(`/organization/editorial-team/${id}`),
+  createEditorialTeam: (data) => apiClient.post('/organization/editorial-team', data),
+  updateEditorialTeam: (id, data) => apiClient.put(`/organization/editorial-team/${id}`, data),
+  deleteEditorialTeam: (id) => apiClient.delete(`/organization/editorial-team/${id}`),
+
+  // Editorial Council
+  getEditorialCouncil: (params) => apiClient.get('/organization/editorial-council', { params }),
+  getEditorialCouncilById: (id) => apiClient.get(`/organization/editorial-council/${id}`),
+  createEditorialCouncil: (data) => apiClient.post('/organization/editorial-council', data),
+  updateEditorialCouncil: (id, data) => apiClient.put(`/organization/editorial-council/${id}`, data),
+  deleteEditorialCouncil: (id) => apiClient.delete(`/organization/editorial-council/${id}`),
 }
 
 export const pagesApi = {
