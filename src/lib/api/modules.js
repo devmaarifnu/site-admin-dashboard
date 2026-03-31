@@ -26,13 +26,6 @@ export const organizationApi = {
   updateBoardMember: (id, data) => apiClient.put(`/organization/board-members/${id}`, data),
   deleteBoardMember: (id) => apiClient.delete(`/organization/board-members/${id}`),
   
-  // Pengurus
-  getPengurus: (params) => apiClient.get('/organization/pengurus', { params }),
-  getPengurusById: (id) => apiClient.get(`/organization/pengurus/${id}`),
-  createPengurus: (data) => apiClient.post('/organization/pengurus', data),
-  updatePengurus: (id, data) => apiClient.put(`/organization/pengurus/${id}`, data),
-  deletePengurus: (id) => apiClient.delete(`/organization/pengurus/${id}`),
-  
   // Departments
   getDepartments: (params) => apiClient.get('/organization/departments', { params }),
   getDepartmentById: (id) => apiClient.get(`/organization/departments/${id}`),

@@ -97,7 +97,6 @@ export const API_ENDPOINTS = {
   ORGANIZATION: {
     POSITIONS: '/organization/positions',
     BOARD_MEMBERS: '/organization/board-members',
-    PENGURUS: '/organization/pengurus',
     DEPARTMENTS: '/organization/departments',
     EDITORIAL_TEAM: '/organization/editorial-team',
     EDITORIAL_COUNCIL: '/organization/editorial-council',

@@ -100,12 +100,6 @@ export default function AdminSidebar() {
           roles: ['super_admin', 'admin'],
         },
         {
-          id: 'pengurus',
-          label: 'Struktur Organisasi',
-          href: '/organization/pengurus',
-          roles: ['super_admin', 'admin'],
-        },
-        {
           id: 'departments',
           label: 'Departemen',
           href: '/organization/departments',
