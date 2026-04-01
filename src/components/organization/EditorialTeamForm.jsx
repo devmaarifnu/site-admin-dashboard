@@ -9,8 +9,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import ImageUploader from '@/components/shared/ImageUploader'
-import { toast } from 'sonner'
-import Image from 'next/image'
 
 const roleTypeOptions = [
   { value: 'pemimpin_redaksi', label: 'Pemimpin Redaksi' },
@@ -32,7 +30,6 @@ const editorialTeamSchema = z.object({
 
 export function EditorialTeamForm({ member, onSubmit, loading }) {
   const [photoUrl, setPhotoUrl] = useState(member?.photo || '')
-  const [uploading, setUploading] = useState(false)
 
   const {
     register,
@@ -67,33 +64,6 @@ export function EditorialTeamForm({ member, onSubmit, loading }) {
 
   const isActive = watch('is_active')
 
-  const handlePhotoUpload = async (files) => {
-    if (!files || files.length === 0) return
-    const file = files[0]
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('tag', 'profile')
-    formData.append('is_public', 'true')
-
-    setUploading(true)
-    try {
-      const token = localStorage.getItem('auth_token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin/cdn/upload`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData,
-      })
-      if (!response.ok) throw new Error('Upload failed')
-      const data = await response.json()
-      setPhotoUrl(data.data?.url || data.url)
-      toast.success('Foto berhasil diupload')
-    } catch {
-      toast.error('Gagal mengupload foto')
-    } finally {
-      setUploading(false)
-    }
-  }
-
   const handleFormSubmit = (data) => {
     onSubmit({
       ...data,
@@ -109,20 +79,13 @@ export function EditorialTeamForm({ member, onSubmit, loading }) {
           <CardTitle>Foto Profil</CardTitle>
         </CardHeader>
         <CardContent>
-          {photoUrl ? (
-            <div className="space-y-4">
-              <div className="relative w-48 h-48 rounded-lg overflow-hidden border mx-auto">
-                <Image src={photoUrl} alt="Preview" fill className="object-cover" />
-              </div>
-              <div className="text-center">
-                <Button type="button" variant="outline" onClick={() => setPhotoUrl('')}>
-                  Ganti Foto
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <ImageUploader onUpload={handlePhotoUpload} accept="image/*" maxSize={2} disabled={uploading} />
-          )}
+          <ImageUploader
+            value={photoUrl}
+            onChange={(url) => setPhotoUrl(url)}
+            folder="profile"
+            label=""
+            maxSize={2}
+          />
         </CardContent>
       </Card>
 
@@ -207,7 +170,7 @@ export function EditorialTeamForm({ member, onSubmit, loading }) {
         <Button type="button" variant="outline" onClick={() => window.history.back()}>
           Batal
         </Button>
-        <Button type="submit" disabled={loading || uploading}>
+        <Button type="submit" disabled={loading}>
           {loading ? 'Menyimpan...' : member ? 'Update' : 'Tambah Tim Redaksi'}
         </Button>
       </div>
