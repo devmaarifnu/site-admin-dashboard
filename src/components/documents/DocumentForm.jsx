@@ -105,7 +105,7 @@ export function DocumentForm({ document, onSubmit, loading }) {
     setUploading(true)
     try {
       const token = localStorage.getItem('auth_token')
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cdn/upload`, {
+      const response = await fetch(`/api/cdn/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

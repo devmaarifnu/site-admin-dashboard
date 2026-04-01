@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Upload, Search, Grid, List, Image as ImageIcon, FileVideo, FileText, Download } from 'lucide-react'
+import { Upload, Search, Grid, List, Image as ImageIcon, FileVideo, FileText, Download, Copy } from 'lucide-react'
 import { mediaApi } from '@/lib/api/media'
 import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
@@ -17,15 +17,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import ImageUploader from '@/components/shared/ImageUploader'
 
 export default function MediaLibraryPage() {
   const [media, setMedia] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const debouncedSearch = useDebounce(searchQuery, 500)
-  const [viewMode, setViewMode] = useState('grid') // grid or list
+  const [viewMode, setViewMode] = useState('grid')
   const [typeFilter, setTypeFilter] = useState('all')
   const [pagination, setPagination] = useState({ page: 1, limit: 24, total: 0 })
+  const [uploadOpen, setUploadOpen] = useState(false)
+  const [uploadedUrl, setUploadedUrl] = useState('')
 
   useEffect(() => {
     fetchMedia()
@@ -34,30 +44,16 @@ export default function MediaLibraryPage() {
   const fetchMedia = async () => {
     setLoading(true)
     try {
-      const params = {
-        page: pagination.page,
-        limit: pagination.limit,
-      }
-      
-      // Only add search if not empty
-      if (debouncedSearch && debouncedSearch.trim() !== '') {
-        params.search = debouncedSearch
-      }
-      
-      // Only add type filter if not 'all'
-      if (typeFilter !== 'all') {
-        params.type = typeFilter
-      }
-      
+      const params = { page: pagination.page, limit: pagination.limit }
+      if (debouncedSearch && debouncedSearch.trim() !== '') params.search = debouncedSearch
+      if (typeFilter !== 'all') params.type = typeFilter
+
       const responseData = await mediaApi.getAll(params)
       const items = Array.isArray(responseData.data) ? responseData.data : []
       const paginationData = responseData.pagination || {}
-      
+
       setMedia(items)
-      setPagination((prev) => ({ 
-        ...prev, 
-        total: paginationData.total_items || 0 
-      }))
+      setPagination((prev) => ({ ...prev, total: paginationData.total_items || 0 }))
     } catch (error) {
       console.error('Error fetching media:', error)
       toast.error('Gagal memuat media library')
@@ -77,6 +73,11 @@ export default function MediaLibraryPage() {
     link.href = url
     link.download = filename
     link.click()
+  }
+
+  const handleCopyUrl = (url) => {
+    navigator.clipboard.writeText(url)
+    toast.success('URL berhasil disalin')
   }
 
   return (
@@ -125,6 +126,10 @@ export default function MediaLibraryPage() {
             <List className="h-4 w-4" />
           </Button>
         </div>
+        <Button onClick={() => setUploadOpen(true)}>
+          <Upload className="mr-2 h-4 w-4" />
+          Upload
+        </Button>
       </div>
 
       {loading ? (
@@ -146,22 +151,26 @@ export default function MediaLibraryPage() {
                 <div key={item.id} className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow group">
                   <div className="aspect-square bg-neutral-100 relative flex items-center justify-center">
                     {item.file_type === 'image' || item.mime_type?.startsWith('image/') ? (
-                      <Image
-                        src={item.file_url}
-                        alt={item.file_name}
-                        fill
-                        className="object-cover"
-                      />
+                      <Image src={item.file_url} alt={item.file_name} fill className="object-cover" />
                     ) : (
                       <div className="text-neutral-400">
                         {getMediaIcon(item.mime_type || item.file_type)}
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        onClick={() => handleCopyUrl(item.file_url)}
+                        title="Salin URL"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
                       <Button
                         size="icon"
                         variant="secondary"
                         onClick={() => handleDownload(item.file_url, item.file_name)}
+                        title="Download"
                       >
                         <Download className="h-4 w-4" />
                       </Button>
@@ -183,12 +192,7 @@ export default function MediaLibraryPage() {
                   <div className="w-12 h-12 bg-neutral-100 rounded flex items-center justify-center flex-shrink-0">
                     {item.file_type === 'image' || item.mime_type?.startsWith('image/') ? (
                       <div className="relative w-full h-full">
-                        <Image
-                          src={item.file_url}
-                          alt={item.file_name}
-                          fill
-                          className="object-cover rounded"
-                        />
+                        <Image src={item.file_url} alt={item.file_name} fill className="object-cover rounded" />
                       </div>
                     ) : (
                       <div className="text-neutral-400 scale-75">
@@ -200,14 +204,24 @@ export default function MediaLibraryPage() {
                     <p className="font-medium truncate">{item.file_name}</p>
                     <p className="text-sm text-neutral-500">{formatFileSize(item.file_size)}</p>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDownload(item.file_url, item.file_name)}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleCopyUrl(item.file_url)}
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy URL
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownload(item.file_url, item.file_name)}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -225,6 +239,35 @@ export default function MediaLibraryPage() {
           )}
         </>
       )}
+
+      {/* Upload Modal */}
+      <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload ke CDN</DialogTitle>
+          </DialogHeader>
+          <ImageUploader
+            value={uploadedUrl}
+            onChange={(url) => {
+              setUploadedUrl(url)
+              if (url) {
+                toast.success('File berhasil diupload')
+                fetchMedia()
+                setUploadOpen(false)
+                setUploadedUrl('')
+              }
+            }}
+            folder="media"
+            label=""
+            maxSize={10}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setUploadOpen(false); setUploadedUrl('') }}>
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
