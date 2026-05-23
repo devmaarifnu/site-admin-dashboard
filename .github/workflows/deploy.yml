@@ -32,7 +32,6 @@ jobs:
           mkdir deploy
           cp -r .next/standalone deploy/
           cp -r .next/static deploy/standalone/.next/
-          cp -r public deploy/standalone
 
       - name: Compress
         run: tar -czf deploy.tar.gz deploy
