@@ -31,8 +31,8 @@ jobs:
         run: |
           mkdir deploy
           cp -r .next/standalone deploy/
-          mkdir -p deploy/.next
-          cp -r .next/static deploy/.next/
+          cp -r .next/static deploy/standalone/.next/
+          cp -r public deploy/standalone
 
       - name: Compress
         run: tar -czf deploy.tar.gz deploy
@@ -60,10 +60,7 @@ jobs:
             rm deploy.tar.gz
 
             echo "Replace standalone..."
-            cp -rf deploy/standalone/* .next/standalone/
-
-            echo "Replace static..."
-            cp -rf deploy/.next/static .next/standalone/.next/
+            sudo rsync -a --delete deploy/standalone/ .next/standalone/
 
             rm -rf deploy
 
