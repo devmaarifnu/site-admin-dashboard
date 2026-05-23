@@ -59,10 +59,7 @@ jobs:
             rm deploy.tar.gz
 
             echo "Replace standalone..."
-            cp -rf deploy/standalone/* .next/standalone/
-
-            echo "Replace static..."
-            cp -rf deploy/.next/static .next/standalone/.next/
+            sudo rsync -a --delete deploy/standalone/ .next/standalone/
 
             rm -rf deploy
 
