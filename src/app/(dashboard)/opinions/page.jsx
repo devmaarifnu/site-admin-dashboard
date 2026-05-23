@@ -46,7 +46,7 @@ export default function OpinionsPage() {
       setOpinions(response.data);
       setPagination((prev) => ({
         ...prev,
-        total: response.pagination.total,
+        total: response.pagination.total_items,
         totalPages: response.pagination.total_pages,
       }));
     } catch (error) {
