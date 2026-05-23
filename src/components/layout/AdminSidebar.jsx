@@ -58,7 +58,7 @@ export default function AdminSidebar() {
       id: 'content',
       label: 'Konten',
       icon: FileEdit,
-      roles: ['super_admin', 'admin', 'editor', 'kontributor'],
+      roles: ['super_admin', 'admin', 'editor', 'admin_document', 'kontributor'],
       children: [
         {
           id: 'news',
