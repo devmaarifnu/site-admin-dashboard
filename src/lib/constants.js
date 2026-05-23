@@ -21,6 +21,8 @@ export const ROLE_OPTIONS = [
   { value: 'super_admin', label: 'Super Admin' },
   { value: 'admin', label: 'Admin' },
   { value: 'editor', label: 'Editor' },
+  { value: 'admin_document', label: 'Admin Dokumen' },
+  { value: 'kontributor', label: 'Kontributor' },
 ];
 
 // Category types

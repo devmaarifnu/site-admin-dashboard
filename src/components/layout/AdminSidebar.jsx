@@ -45,7 +45,7 @@ export default function AdminSidebar() {
       label: 'Dashboard',
       icon: LayoutDashboard,
       href: '/dashboard',
-      roles: ['super_admin', 'admin', 'editor'],
+      roles: ['super_admin', 'admin', 'editor', 'admin_document', 'kontributor'],
     },
     {
       id: 'users',
@@ -58,25 +58,25 @@ export default function AdminSidebar() {
       id: 'content',
       label: 'Konten',
       icon: FileEdit,
-      roles: ['super_admin', 'admin', 'editor'],
+      roles: ['super_admin', 'admin', 'editor', 'kontributor'],
       children: [
         {
           id: 'news',
           label: 'Berita',
           href: '/news',
-          roles: ['super_admin', 'admin', 'editor'],
+          roles: ['super_admin', 'admin', 'editor', 'kontributor'],
         },
         {
           id: 'opinions',
           label: 'Opini',
           href: '/opinions',
-          roles: ['super_admin', 'admin', 'editor'],
+          roles: ['super_admin', 'admin', 'editor', 'kontributor'],
         },
         {
           id: 'documents',
           label: 'Dokumen',
           href: '/documents',
-          roles: ['super_admin', 'admin'],
+          roles: ['super_admin', 'admin', 'admin_document'],
         },
       ],
     },
@@ -138,25 +138,25 @@ export default function AdminSidebar() {
       label: 'Media Library',
       icon: FolderOpen,
       href: '/media-library',
-      roles: ['super_admin', 'admin', 'editor'],
+      roles: ['super_admin', 'admin'],
     },
     {
       id: 'taxonomy',
       label: 'Taksonomi',
       icon: Tags,
-      roles: ['super_admin', 'admin'],
+      roles: ['super_admin', 'admin', 'editor'],
       children: [
         {
           id: 'categories',
           label: 'Kategori',
           href: '/categories',
-          roles: ['super_admin', 'admin'],
+          roles: ['super_admin', 'admin', 'editor'],
         },
         {
           id: 'tags',
           label: 'Tag',
           href: '/tags',
-          roles: ['super_admin', 'admin'],
+          roles: ['super_admin', 'admin', 'editor'],
         },
       ],
     },
@@ -186,7 +186,7 @@ export default function AdminSidebar() {
       label: 'Activity Logs',
       icon: Activity,
       href: '/activity-logs',
-      roles: ['super_admin'],
+      roles: ['super_admin', 'admin'],
     },
   ];
 
