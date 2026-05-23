@@ -25,6 +25,7 @@ import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import RichTextEditor from '@/components/shared/RichTextEditor';
 import ImageUploader from '@/components/shared/ImageUploader';
+import ArticlePreviewModal from '@/components/shared/ArticlePreviewModal';
 import { newsApi } from '@/lib/api/news';
 
 // Form validation schema
@@ -53,6 +54,7 @@ export default function NewsForm({ initialData = null, mode = 'create' }) {
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [loadingTags, setLoadingTags] = useState(true);
   const [showSeoFields, setShowSeoFields] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const {
     register,
@@ -104,9 +106,10 @@ export default function NewsForm({ initialData = null, mode = 'create' }) {
     }
   }, [initialData, reset]);
 
-  const titleValue = watch('title');
-  const contentValue = watch('content');
-  const excerptValue = watch('excerpt');
+  const watchedValues = watch();
+  const titleValue = watchedValues.title;
+  const contentValue = watchedValues.content;
+  const excerptValue = watchedValues.excerpt;
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -231,8 +234,7 @@ export default function NewsForm({ initialData = null, mode = 'create' }) {
   };
 
   const handlePreview = () => {
-    // TODO: Implement preview functionality
-    toast.info('Fitur preview akan segera tersedia');
+    setShowPreview(true);
   };
 
   return (
@@ -568,6 +570,15 @@ export default function NewsForm({ initialData = null, mode = 'create' }) {
           </Card>
         </div>
       </div>
+
+      <ArticlePreviewModal
+        open={showPreview}
+        onClose={() => setShowPreview(false)}
+        type="news"
+        data={watchedValues}
+        tags={tags}
+        categories={categories}
+      />
     </form>
   );
 }

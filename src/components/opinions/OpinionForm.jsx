@@ -24,6 +24,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import RichTextEditor from '@/components/shared/RichTextEditor';
 import ImageUploader from '@/components/shared/ImageUploader';
+import ArticlePreviewModal from '@/components/shared/ArticlePreviewModal';
 import { opinionsApi } from '@/lib/api/opinions';
 
 // Form validation schema
@@ -51,6 +52,7 @@ export default function OpinionForm({ initialData = null, mode = 'create' }) {
   const [selectedTags, setSelectedTags] = useState([]);
   const [loadingTags, setLoadingTags] = useState(true);
   const [showSeoFields, setShowSeoFields] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const {
     register,
@@ -98,8 +100,9 @@ export default function OpinionForm({ initialData = null, mode = 'create' }) {
     }
   }, [initialData, reset]);
 
-  const titleValue = watch('title');
-  const excerptValue = watch('excerpt');
+  const watchedValues = watch();
+  const titleValue = watchedValues.title;
+  const excerptValue = watchedValues.excerpt;
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -194,7 +197,7 @@ export default function OpinionForm({ initialData = null, mode = 'create' }) {
   };
 
   const handlePreview = () => {
-    toast.info('Fitur preview akan segera tersedia');
+    setShowPreview(true);
   };
 
   return (
@@ -531,6 +534,14 @@ export default function OpinionForm({ initialData = null, mode = 'create' }) {
           </Card>
         </div>
       </div>
+
+      <ArticlePreviewModal
+        open={showPreview}
+        onClose={() => setShowPreview(false)}
+        type="opinion"
+        data={watchedValues}
+        tags={tags}
+      />
     </form>
   );
 }
