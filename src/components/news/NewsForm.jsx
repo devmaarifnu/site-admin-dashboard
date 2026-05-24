@@ -130,7 +130,7 @@ export default function NewsForm({ initialData = null, mode = 'create' }) {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await categoriesApi.getAll({ limit: 100 });
+        const response = await categoriesApi.getAll({ limit: 100, type: 'news' });
         setCategories(response.data || []);
       } catch (error) {
         console.error('Failed to fetch categories:', error);
