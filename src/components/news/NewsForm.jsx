@@ -27,6 +27,7 @@ import RichTextEditor from '@/components/shared/RichTextEditor';
 import ImageUploader from '@/components/shared/ImageUploader';
 import ArticlePreviewModal from '@/components/shared/ArticlePreviewModal';
 import { newsApi } from '@/lib/api/news';
+import { categoriesApi, tagsApi } from '@/lib/api/categories-tags';
 
 // Form validation schema
 const newsSchema = z.object({
@@ -99,6 +100,7 @@ export default function NewsForm({ initialData = null, mode = 'create' }) {
         ...initialData,
         featured_image: initialData.image || initialData.featured_image || '',
         published_at: formattedPublishedAt,
+        tag_ids: initialData.tags?.map((t) => t.id) || initialData.tag_ids || [],
       };
 
       console.log('Resetting form with:', formData);
@@ -128,17 +130,8 @@ export default function NewsForm({ initialData = null, mode = 'create' }) {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        // TODO: Replace with actual API call when categories endpoint is ready
-        // const response = await categoriesApi.getAll({ type: 'news' });
-        // setCategories(response.data);
-        
-        // Mock data for now
-        setCategories([
-          { id: 1, name: 'Berita Umum' },
-          { id: 2, name: 'Pendidikan' },
-          { id: 3, name: 'Kegiatan' },
-          { id: 4, name: 'Pengumuman' },
-        ]);
+        const response = await categoriesApi.getAll({ limit: 100 });
+        setCategories(response.data || []);
       } catch (error) {
         console.error('Failed to fetch categories:', error);
         toast.error('Gagal memuat kategori');
@@ -154,18 +147,8 @@ export default function NewsForm({ initialData = null, mode = 'create' }) {
   useEffect(() => {
     const fetchTags = async () => {
       try {
-        // TODO: Replace with actual API call when tags endpoint is ready
-        // const response = await tagsApi.getAll({ type: 'news' });
-        // setTags(response.data);
-        
-        // Mock data for now
-        setTags([
-          { id: 1, name: 'Ma\'arif NU' },
-          { id: 2, name: 'Pendidikan Islam' },
-          { id: 3, name: 'Pesantren' },
-          { id: 4, name: 'Madrasah' },
-          { id: 5, name: 'Kurikulum' },
-        ]);
+        const response = await tagsApi.getAll({ limit: 100 });
+        setTags(response.data || []);
       } catch (error) {
         console.error('Failed to fetch tags:', error);
         toast.error('Gagal memuat tags');
@@ -177,11 +160,12 @@ export default function NewsForm({ initialData = null, mode = 'create' }) {
     fetchTags();
   }, []);
 
-  // Initialize selected tags from form data
+  // Initialize selected tags from form data (API returns tags as objects, extract IDs)
   useEffect(() => {
-    if (initialData?.tag_ids) {
-      setSelectedTags(initialData.tag_ids);
-      setValue('tag_ids', initialData.tag_ids);
+    const tagIds = initialData?.tags?.map((t) => t.id) || initialData?.tag_ids || [];
+    if (tagIds.length > 0) {
+      setSelectedTags(tagIds);
+      setValue('tag_ids', tagIds);
     }
   }, [initialData, setValue]);
 
@@ -518,18 +502,25 @@ export default function NewsForm({ initialData = null, mode = 'create' }) {
                 </div>
               ) : (
                 <>
-                  <select
-                    id="category_id"
-                    {...register('category_id', { valueAsNumber: true })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  >
-                    <option value="">Pilih Kategori</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
+                  <Controller
+                    name="category_id"
+                    control={control}
+                    render={({ field }) => (
+                      <select
+                        id="category_id"
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      >
+                        <option value="">Pilih Kategori</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  />
                   {errors.category_id && (
                     <p className="text-sm text-red-600 mt-1">{errors.category_id.message}</p>
                   )}

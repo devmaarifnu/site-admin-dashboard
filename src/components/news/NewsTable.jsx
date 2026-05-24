@@ -27,6 +27,7 @@ import EmptyState from '@/components/shared/EmptyState';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { formatDate } from '@/lib/utils';
 import { MoreHorizontal, Edit, Trash2, Eye, Star, Send } from 'lucide-react';
+import ArticlePreviewModal from '@/components/shared/ArticlePreviewModal';
 
 export default function NewsTable({
   news,
@@ -41,6 +42,7 @@ export default function NewsTable({
   const router = useRouter();
   const [deleteId, setDeleteId] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [previewItem, setPreviewItem] = useState(null);
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -183,7 +185,7 @@ export default function NewsTable({
                           Publish
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setPreviewItem(item)}>
                         <Eye className="mr-2 h-4 w-4" />
                         Preview
                       </DropdownMenuItem>
@@ -222,6 +224,21 @@ export default function NewsTable({
         confirmText="Ya, Hapus"
         isLoading={isDeleting}
       />
+
+      {previewItem && (
+        <ArticlePreviewModal
+          open={!!previewItem}
+          onClose={() => setPreviewItem(null)}
+          type="news"
+          data={{
+            ...previewItem,
+            featured_image: previewItem.image,
+            tag_ids: previewItem.tags?.map((t) => t.id) || [],
+          }}
+          categories={previewItem.category ? [previewItem.category] : []}
+          tags={previewItem.tags || []}
+        />
+      )}
     </>
   );
 }
